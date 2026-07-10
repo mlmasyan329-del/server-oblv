@@ -9,14 +9,17 @@ let sock;
     const { state, saveCreds } = await useMultiFileAuthState('auth');
     sock = makeWASocket({
         auth: state,
-        printQRInTerminal: true,
         browser: ['OBLIVION', 'Chrome', '120.0.0.0']
     });
 
     sock.ev.on('creds.update', saveCreds);
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update;
-        if (qr) console.log('SCAN QR INI:', qr);
+        if (qr) {
+            console.log('========== SCAN QR INI ==========');
+            console.log(qr);
+            console.log('===================================');
+        }
         if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode;
             if (reason !== DisconnectReason.loggedOut) process.exit(0);
