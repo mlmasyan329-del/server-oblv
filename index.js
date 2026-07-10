@@ -1,9 +1,10 @@
 const { makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const express = require('express');
+const QRCode = require('qrcode');
 const app = express();
 app.use(express.json());
 
-let sock;
+let sock, lastQr = '';
 
 (async () => {
     const { state, saveCreds } = await useMultiFileAuthState('auth');
@@ -16,9 +17,8 @@ let sock;
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect, qr } = update;
         if (qr) {
-            console.log('========== SCAN QR INI ==========');
-            console.log(qr);
-            console.log('===================================');
+            lastQr = qr;
+            console.log('QR siap, buka /qr di browser');
         }
         if (connection === 'close') {
             const reason = lastDisconnect?.error?.output?.statusCode;
@@ -28,8 +28,16 @@ let sock;
     });
 })();
 
-app.get('/', (req, res) => {
-    res.send('🔥 OBLIVION SERVER AKTIF');
+app.get('/', (req, res) => res.send('🔥 OBLIVION SERVER AKTIF'));
+
+app.get('/qr', async (req, res) => {
+    if (!lastQr) return res.send('Belum ada QR, tunggu sebentar...');
+    try {
+        const img = await QRCode.toDataURL(lastQr);
+        res.send(`<img src="${img}" style="width:300px;height:300px;"><p>Scan QR dengan WhatsApp</p>`);
+    } catch (e) {
+        res.status(500).send('Error QR');
+    }
 });
 
 app.post('/api/strike', async (req, res) => {
